@@ -1,0 +1,14 @@
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.http import HttpRequest
+# Create your views here.
+def hello(request):
+	line = []
+	line.append("Hello World ")
+	line.append("Get: ")
+	for key, value in request.GET.items():
+		line.append("%s: %s \n" % (key, value))
+	line.append("Post: ")
+	for key, value in request.POST.items():
+		line.append("%s: %s \n" % (key, value))
+	return HttpResponse("\n".join(line))

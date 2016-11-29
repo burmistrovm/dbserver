@@ -1,0 +1,17 @@
+from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import User
+from ask.models import Question
+
+class Command(BaseCommand):
+	help = 'Fill the database'
+	def handle(self, *args, **options):
+		user = User.objects.get(email='nuf@nuf.nu')
+		Question.objects.all().delete()
+		for i in range(1,10):
+			q = Question(
+				author=user, 
+				text = 'In eget neque in turpis suscipit tristique vitae nec mauris. Vestibulum auctor, turpis non lobortis gravida, nisi est vulputate lectus, ut dictum erat augue ut erat.',
+				title = 'title' + str(i),
+				question_id = i,
+				)
+			q.save()
