@@ -38,6 +38,18 @@ def clear(request):
 	db.execute("""DELETE Follower.* FROM Follower;""", post=True)
 	return JsonResponse({"code": 0, "response": "OK"})
 
+@csrf_exempt
+def status(request):
+	user_count = db.execute("""SELECT count(*) FROM User;""")
+	thread_count = db.execute("""SELECT count(*) FROM Thread;""")
+	forum_count = db.execute("""SELECT count(*) FROM Forum;""")
+	post_count = db.execute("""SELECT count(*) FROM Post;""")
+	users = user_count[0][0]
+	threads = thread_count[0][0]
+	forums = forum_count[0][0]
+	posts = post_count[0][0]
+	return JsonResponse({"code": 0, "response": {"user": users, "thread": threads, "forum": forums, "post": posts}})
+
 def str_to_json(value, is_bool=False):
 	if is_bool:
 		return value != 0

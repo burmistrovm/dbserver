@@ -66,6 +66,7 @@ post_patterns = [
 ]
 
 urlpatterns = [
+    url(r'^db/api/status/', common.status),
     url(r'^db/api/clear/', common.clear),
     url(r'^db/api/user/',include(user_patterns)),
     url(r'^db/api/forum/',include(forum_patterns)),
