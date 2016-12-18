@@ -1,6 +1,7 @@
-import json, MySQLdb
+from django.db import connection,transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+
 
 MYSQL_DUPLICATE_ENTITY_ERROR = 1062
 
@@ -8,20 +9,21 @@ class MyDB:
 	def __init__(self):
 		self.connection = None
 		self.cursor = None
-		self.initConnAndCursor()
 
 	def execute(self, sql, args=(), post=False):
-		self.cursor.execute(sql, args)
-		if post:
-			self.connection.commit()
-			return self.cursor.lastrowid
-
-		return self.cursor.fetchall()
+		self.cursor = connection.cursor()
+		with(transaction.atomic()):
+			if post:
+				self.cursor.execute(sql, args)
+				result = self.cursor.lastrowid
+			else:
+				self.cursor.execute(sql, args)
+				result = self.cursor.fetchall()
+		return result
 
 	def initConnAndCursor(self):
 		if not self.connection or not self.connection.open:
-			self.connection = MySQLdb.connect(host="localhost", user="django", passwd="24081994", db="dbproj")
-			self.cursor = self.connection.cursor()
+			self.connection = connection(host="localhost", user="django", passwd="24081994", db="dbproj")
 			self.connection.set_character_set('utf8')
 
 	def closeConnection(self):
@@ -230,9 +232,9 @@ def get_user_list(forum,limit="",order="ASC"):
 	return user_list;
 	
 
-def get_thread_dict(thread):
+def get_thread_dict(title):
 	thread_list_sql = db.execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
-		WHERE thread = %(thread)s LIMIT 1;""", {'thread': thread})
+		WHERE title = %(title)s LIMIT 1;""", {'title': title})
 	if not thread_list_sql:
 		return list()
 	thread_sql = thread_list_sql[0]
@@ -302,6 +304,35 @@ def get_post_by_id(postId):
 			'isHighlighted': str_to_json(post_sql[13], True),
 			'isApproved': str_to_json(post_sql[14], True),
 			'mpath': str_to_json(post_sql[15])}
+
+
+def get_post_dict(user, date):
+	sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
+		isSpam, isEdited, isDeleted, isHighlighted, isApproved, mpath FROM Post \
+		WHERE user = %(user)s AND date = %(date)s LIMIT 1;"""
+
+	post_list_sql = db.execute(sql, {'user':user, 'date':date})
+	if not post_list_sql:
+		return list()
+
+	post_sql = post_list_sql[0]
+	return {'id': str_to_json(post_sql[0]),
+			'user': str_to_json(post_sql[1]),
+			'thread': str_to_json(post_sql[2]),
+			'forum': str_to_json(post_sql[3]),
+			'message': str_to_json(post_sql[4]),
+			'parent': str_to_json(post_sql[5]),
+			'date': post_sql[6].strftime('%Y-%m-%d %H:%M:%S'),
+			'likes': str_to_json(post_sql[7]),
+			'dislikes': str_to_json(post_sql[8]),
+			'points': str_to_json(post_sql[9]),
+			'isSpam': str_to_json(post_sql[10], True),
+			'isEdited': str_to_json(post_sql[11], True),
+			'isDeleted': str_to_json(post_sql[12], True),
+			'isHighlighted': str_to_json(post_sql[13], True),
+			'isApproved': str_to_json(post_sql[14], True),
+			'mpath': str_to_json(post_sql[15])}
+
 
 def add_post_to_thread(thread):
 	db.execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread}, post=True)

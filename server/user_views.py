@@ -4,6 +4,7 @@ import json, MySQLdb
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_user_dict,get_followers_list,get_following_list,get_subscribed_threads_list,get_post_list
+from django.db import connection, DatabaseError, IntegrityError
 
 @csrf_exempt
 def create(request):
@@ -17,15 +18,20 @@ def create(request):
 		(%(username)s, %(about)s, %(name)s, %(email)s, %(isAnonymous)s);"""
 	args = {'username': username, 'about': about, 'name': name, 'email': email, 'isAnonymous': isAnonymous}
 	try:
-		db.execute(sql, args, True)
-	except MySQLdb.IntegrityError, message:
-		if message[0] == MYSQL_DUPLICATE_ENTITY_ERROR:
-			return JsonResponse({"code": 5,
+		ID = db.execute(sql, args, True)
+	except IntegrityError:
+		return JsonResponse({"code": 5,
 							   "response": "This user already exists"})
+	except DatabaseError:
 		return JsonResponse({"code": 4,
 						   "response": "Oh, we have some really bad error"})
-	user_dict = get_user_dict(email)
-	return JsonResponse({"code": 0, "response": user_dict})
+	#user_dict = get_user_dict(email)
+	return JsonResponse({"code": 0, "response":{'id': ID,
+												'email': email,
+												'name': name,
+												'username': username,
+												'isAnonymous': isAnonymous,
+												'about': about}})
 
 @csrf_exempt
 def details(request):

@@ -4,8 +4,8 @@ import json, MySQLdb
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from common import db, MYSQL_DUPLICATE_ENTITY_ERROR
-from common import get_post_by_id, get_forum_dict, get_user_dict, get_thread_dict, add_post_to_thread,get_post_list
-max1 = 4
+from common import get_post_by_id,get_post_dict, get_forum_dict, get_user_dict, get_thread_by_id, add_post_to_thread,get_post_list
+from django.db import connection, DatabaseError, IntegrityError
 
 
 @csrf_exempt
@@ -27,7 +27,14 @@ def create(request):
 		(%(date)s, %(thread)s, %(forum)s, %(message)s, %(user)s, %(isSpam)s, %(isDeleted)s, %(isEdited)s, %(isApproved)s, %(isHighlighted)s, %(parent)s, %(mpath)s);"""
 	args = {'date': date, 'thread': thread, 'forum': forum, 'message': message, 'user': user, 
 	'isSpam': isSpam, 'isDeleted': isDeleted, 'isEdited': isEdited, 'isApproved': isApproved, 'isHighlighted': isHighlighted, 'parent': parent, 'mpath': mpath}
-	postID = db.execute(sql, args, True)
+	try:
+		postID = db.execute(sql, args, True)
+	except IntegrityError:
+		post_dict = get_post_dict(user, date)
+		return JsonResponse({"code": 0, "response": post_dict})
+	except DatabaseError:
+		return JsonResponse({"code": 4,
+						   "response": "Oh, we have some really bad error"})
 	add_post_to_thread(thread)
 	if parent == None:
 		mpath = mpath + date + '-' + str(postID)
@@ -37,8 +44,19 @@ def create(request):
 		print(mpath_que[0][0])
 		mpath = mpath_que[0][0] + "." + str(date) + '-' + str(postID)
 	db.execute("""UPDATE Post SET mpath = %(mpath)s WHERE post = %(id)s;""", {'mpath': mpath,'id':postID})
-	post = get_post_by_id(postID)
-	return JsonResponse({"code": 0, "response": post})
+	#post = get_post_by_id(postID)
+	return JsonResponse({"code": 0, "response":{'id': postID,
+												'user': user,
+												'thread': thread,
+												'forum': forum,
+												'message': message,
+												'parent': parent,
+												'date': date,
+												'isSpam': isSpam,
+												'isEdited': isEdited,
+												'isDeleted': isDeleted,
+												'isHighlighted': isHighlighted,
+												'isApproved': isApproved}})
 
 @csrf_exempt
 def details(request):
@@ -53,7 +71,7 @@ def details(request):
 	thread = post_dict.get('thread')
 	post_dict['user'] = get_user_dict(user)
 	post_dict['forum'] = get_forum_dict(forum)
-	post_dict['thread'] = get_thread_dict(thread)
+	post_dict['thread'] = get_thread_by_id(thread)
 	return JsonResponse({"code": 0, "response": post_dict})
 
 @csrf_exempt

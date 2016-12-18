@@ -4,8 +4,9 @@ import requests
 import MySQLdb
 import json 
 from django.http import JsonResponse
+from django.db import connection, DatabaseError, IntegrityError
 from django.views.decorators.csrf import csrf_exempt
-from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_forum_dict,get_user_dict,get_post_list,get_thread_dict,get_thread_list,get_user_list
+from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_forum_dict,get_user_dict,get_post_list,get_thread_by_id,get_thread_list,get_user_list
 
 @csrf_exempt
 def create(request):
@@ -18,11 +19,14 @@ def create(request):
 	args = {'name': name, 'short_name': short_name, 'user': user}
 	try:
 		db.execute(sql, args, True)
-	except MySQLdb.IntegrityError, message:
-		print message[0]
-	finally:
+	except IntegrityError:
 		forum_dict = get_forum_dict(short_name)
 		return JsonResponse({"code": 0, "response": forum_dict})
+	except DatabaseError:
+		return JsonResponse({"code": 4,
+						   "response": "Oh, we have some really bad error"})
+	forum_dict = get_forum_dict(short_name)
+	return JsonResponse({"code": 0, "response": forum_dict})
 
 @csrf_exempt
 def details(request):
@@ -64,7 +68,7 @@ def listPosts(request):
 		if forumRelated:
 			post_dict['forum'] = get_forum_dict(post_dict['forum'])
 		if threadRelated:
-			post_dict['thread'] = get_thread_dict(post_dict['thread'])
+			post_dict['thread'] = get_thread_by_id(post_dict['thread'])
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt

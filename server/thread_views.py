@@ -3,6 +3,7 @@ import requests
 import json, MySQLdb
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import connection, DatabaseError, IntegrityError
 from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_thread_dict, get_user_dict, get_forum_dict,get_thread_by_id,get_subscription,get_post_list,get_thread_list
 
 @csrf_exempt
@@ -29,6 +30,7 @@ def create(request):
 	message = thread.get('message')
 	date = thread.get('date')
 	slug = thread.get('slug')
+	print()
 	if thread.get('isClosed'):
 		isClosed = True
 	else:
@@ -41,8 +43,17 @@ def create(request):
 		(%(title)s, %(user)s, %(forum)s, %(message)s, %(date)s, %(slug)s, %(isDeleted)s, %(isClosed)s);"""
 	args = {'title': title, 'user': user, 'forum': forum, 'message': message, 'date': date, 
 	'slug': slug, 'isDeleted': isDeleted, 'isClosed': isClosed}
-	thread_id = db.execute(sql, args, True)
-	thread_dict = get_thread_dict(thread_id)
+	try:
+		thread_id = db.execute(sql, args, True)
+	except IntegrityError:
+		thread_dict = get_thread_dict(title)
+		return JsonResponse({"code": 0, "response": thread_dict})
+	except DatabaseError:
+		print 2
+		return JsonResponse({"code": 4,
+						   "response": "Oh, we have some really bad error"})
+	thread_dict = get_thread_by_id(thread_id)
+	print thread_id
 	return JsonResponse({"code": 0, "response": thread_dict})
 
 @csrf_exempt
@@ -117,16 +128,16 @@ def remove(request):
 	thread_query = json.loads(request.body)
 	thread_ID = thread_query.get('thread')
 	db.execute("""UPDATE Post SET isDeleted = 1 WHERE thread = '%(thread)s';""", {'thread': thread_ID}, True)
-	db.execute("""UPDATE Thread SET posts = 0, isDeleted = True WHERE thread = %(thread)s;""", {'thread': thread_ID}, post=True)
-	return JsonResponse({"code": 0, "response": {"thread": postID}})
+	db.execute("""UPDATE Thread SET posts = 0, isDeleted = True WHERE thread = %(thread)s;""", {'thread': thread_ID}, True)
+	return JsonResponse({"code": 0, "response": {"thread": thread_ID}})
 
 @csrf_exempt
 def restore(request):
 	thread_query = json.loads(request.body)
 	thread_ID = thread_query.get('thread')
-	db.execute("UPDATE Post SET isDeleted = False WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""))
+	db.execute("UPDATE Post SET isDeleted = False WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""),{}, True)
 	posts = int(db.execute("SELECT COUNT(*) FROM Post WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""))[0][0])
-	db.execute("""UPDATE Thread SET posts = %(posts)s, isDeleted = False WHERE thread = %(thread)s;""", {'posts':posts,'thread': thread_ID})
+	db.execute("""UPDATE Thread SET posts = %(posts)s, isDeleted = False WHERE thread = %(thread)s;""", {'posts':posts,'thread': thread_ID}, True)
 	return JsonResponse({"code": 0, "response": {"thread": thread_ID}})
 
 @csrf_exempt
@@ -136,10 +147,9 @@ def subscribe(request):
 	thread = subscription.get('thread')
 	try:
 		subscription_id = db.execute("""INSERT INTO Subscription (subscriber, thread) VALUES \
-			(%(user)s, %(thread)s);""", {'user': user, 'thread': thread})
-	except MySQLdb.IntegrityError, message:
-		if message[0] == MYSQL_DUPLICATE_ENTITY_ERROR:
-			1
+			(%(user)s, %(thread)s);""", {'user': user, 'thread': thread}, True)
+	except IntegrityError:
+		1
 	subscription_dict = get_subscription(user, thread)
 	return JsonResponse({"code": 0, "response": subscription_dict})
 
