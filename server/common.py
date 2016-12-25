@@ -32,12 +32,18 @@ db = MyDB()
 
 @csrf_exempt
 def clear(request):
-	db.execute("""DELETE Forum.* FROM Forum;""", post=True)
-	db.execute("""DELETE User.* FROM User;""", post=True)
-	db.execute("""DELETE Post.* FROM  Post;""")
-	db.execute("""DELETE Thread.* FROM  Thread;""", post=True)
-	db.execute("""DELETE Subscription.* FROM Subscription;""", post=True)
-	db.execute("""DELETE Follower.* FROM Follower;""", post=True)
+	'''TRUNCATE TABLE %s'''
+	db.execute("""TRUNCATE TABLE Forum;""", post=True)
+	db.execute("""TRUNCATE TABLE User;""", post=True)
+	db.execute("""TRUNCATE TABLE Post;""", post=True)
+	db.execute("""TRUNCATE TABLE Thread;""", post=True)
+	db.execute("""TRUNCATE TABLE Subscription;""", post=True)
+	db.execute("""TRUNCATE TABLE Follower;""", post=True)
+	#db.execute("""DELETE User.* FROM User;""", post=True)
+	#db.execute("""DELETE Post.* FROM  Post;""")
+	#db.execute("""DELETE Thread.* FROM  Thread;""", post=True)
+	#db.execute("""DELETE Subscription.* FROM Subscription;""", post=True)
+	#db.execute("""DELETE Follower.* FROM Follower;""", post=True)
 	return JsonResponse({"code": 0, "response": "OK"})
 
 @csrf_exempt
