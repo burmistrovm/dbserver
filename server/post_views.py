@@ -94,24 +94,7 @@ def list(request):
 	related = request.GET.getlist('related')
 	relations = []
 	relations.extend(related)
-	threadRelated = False
-	forumRelated = False
-	userRelated = False
-	for related_value in relations:
-		if related_value == "thread":
-			threadRelated = True
-		elif related_value == "forum":
-			forumRelated = True
-		elif related_value == "user":
-			userRelated = True
-	post_list = get_post_list(thread = thread,forum = forum,since = since,order = order,limit = limit,sort = sort)
-	for post_dict in post_list:
-		if userRelated:
-			post_dict['user'] = get_user_dict(post_dict['user'])
-		if forumRelated:
-			post_dict['forum'] = get_forum_dict(post_dict['forum'])
-		if threadRelated:
-			post_dict['thread'] = get_thread_dict(post_dict['thread'])
+	post_list = get_post_list(thread = thread,forum = forum,since = since,order = order,limit = limit,sort = sort,relations = relations)
 	print(request.get_full_path() + request.body + "-")
 	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_list})
@@ -148,6 +131,7 @@ def update(request):
 
 @csrf_exempt
 def vote(request):
+	begin = time.time()
 	voteBody = json.loads(request.body)
 	post = voteBody.get('post')
 	vote = voteBody.get('vote')
@@ -158,4 +142,6 @@ def vote(request):
 		db.execute("""UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;""",
 				   {'post': post}, True)
 	post_dict = get_post_by_id(post)
+	print(request.get_full_path() + request.body + "-")
+	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_dict})

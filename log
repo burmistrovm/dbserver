@@ -4,7 +4,63 @@ System check identified no issues (0 silenced).
 
 You have unapplied migrations; your app may not work properly until they are applied.
 Run 'python manage.py migrate' to apply them.
-December 25, 2016 - 21:57:52
+December 28, 2016 - 22:48:05
 Django version 1.9.4, using settings 'dbserver.settings'
 Starting development server at http://127.0.0.1:81/
 Quit the server with CONTROL-C.
+/db/api/post/details/?post=711526&related=user-
+120.890855789
+/db/api/user/listFollowers/?limit=71&user=x6%40mail.ru&order=desc-
+1.37901306152
+/db/api/user/listFollowers/?limit=96&user=uhcx5vge8%40ya.ru&order=desc-
+5.66005706787
+/db/api/forum/listThreads/?related=user&related=forum&limit=24&order=asc&forum=pon845-
+44.3968772888
+/db/api/forum/listThreads/?related=forum&limit=20&order=desc&forum=zg-
+67.3789978027
+/db/api/post/details/?post=985991&related=forum&related=thread&related=user-
+6.26707077026
+/db/api/user/listFollowing/?limit=66&user=x2u%40yahoo.com&order=asc-
+4.83298301697
+/db/api/post/list/?post=140791&limit=99&order=desc&thread=7653-
+17540.4901505
+/db/api/post/list/?post=185142&limit=82&order=desc&thread=4492-
+17661.7820263
+/db/api/user/listPosts/?limit=75&user=0sax%40gmail.com&order=desc-
+145.399093628
+/db/api/user/listPosts/?limit=64&user=7b28vs9%40list.ru&order=desc-
+1.92809104919
+/db/api/user/listPosts/?limit=85&user=hdsu8ggfrw%40yahoo.com&order=asc-
+6.03318214417
+/db/api/post/details/?post=527657&related=thread&related=user&related=forum-
+5.48720359802
+/db/api/forum/listThreads/?limit=29&order=asc&forum=pon845-
+15.7098770142
+/db/api/user/listFollowers/?limit=96&user=ta12wfph%40list.ru&order=desc-
+1.50585174561
+/db/api/user/listPosts/?limit=67&user=0dv%40ua.ru&order=desc-
+1.83296203613
+/db/api/thread/listPosts/?limit=38&order=desc&thread=4376-
+4292.7441597
+/db/api/user/listFollowing/?limit=48&user=q6a0f7v%40bk.ru&order=desc-
+1.24192237854
+/db/api/forum/details/?related=user&forum=1ehrl35d7x-
+1.49011611938
+/db/api/forum/listThreads/?limit=54&order=desc&forum=axi3h5ym-
+18.1980133057
+/db/api/user/listFollowing/?limit=83&user=ck5n0q8%40mail.ru&order=asc-
+1.30891799927
+/db/api/post/details/?post=718585-
+2.65288352966
+/db/api/post/list/?post=19977&limit=38&order=asc&thread=9950-
+1213.88101578
+/db/api/forum/listThreads/?related=forum&related=user&limit=20&order=asc&forum=3ptu-
+3225.233078
+/db/api/thread/listPosts/?limit=93&order=asc&thread=649-
+4058.57992172
+/db/api/user/listFollowing/?limit=91&user=a8u1m4q%40gmail.com&order=desc-
+2.36296653748
+/db/api/forum/listThreads/?limit=42&order=asc&forum=mo7-
+22.4177837372
+/db/api/thread/listPosts/?limit=66&order=asc&thread=2498-
+1385.02502441
