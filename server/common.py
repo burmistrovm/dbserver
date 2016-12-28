@@ -108,13 +108,13 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			userRelated = True
 	if thread != "" and thread != None:
 		where = "Post.thread = '{}' ".format(thread)
-		# realated_items_sql += """,User.user, User.email, User.name, User.username, User.isAnonymous, User.about"""
-		# realated_join_sql += """LEFT JOIN User ON(Post.user = email)"""
-		# realated_items_sql += """,Forum.forum, Forum.name, Forum.short_name, Forum.user"""
-		# realated_join_sql += """LEFT JOIN Forum ON(Post.forum = Forum.short_name)"""
-		# realated_items_sql += """,Thread.title, Thread.user, Thread.forum, Thread.message, Thread.date, Thread.slug, Thread.isDeleted,\
-		# Thread.isClosed, Thread.thread, Thread.posts, Thread.points, Thread.likes, Thread.dislikes"""
-		# realated_join_sql += """LEFT JOIN Thread ON(Post.thread = Thread.thread)"""
+		realated_items_sql += """,User.user, User.email, User.name, User.username, User.isAnonymous, User.about"""
+		realated_join_sql += """LEFT JOIN User ON(Post.user = email)"""
+		realated_items_sql += """,Forum.forum, Forum.name, Forum.short_name, Forum.user"""
+		realated_join_sql += """LEFT JOIN Forum ON(Post.forum = Forum.short_name)"""
+		realated_items_sql += """,Thread.title, Thread.user, Thread.forum, Thread.message, Thread.date, Thread.slug, Thread.isDeleted,\
+		Thread.isClosed, Thread.thread, Thread.posts, Thread.points, Thread.likes, Thread.dislikes"""
+		realated_join_sql += """LEFT JOIN Thread ON(Post.thread = Thread.thread)"""
 
 	if user != "":
 		where = "Post.user = '{}'".format(user)
