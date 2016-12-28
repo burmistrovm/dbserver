@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connection, DatabaseError, IntegrityError
 from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_thread_dict, get_user_dict, get_forum_dict,get_thread_by_id,get_subscription,get_post_list,get_thread_list
+import time
 
 @csrf_exempt
 def open(request):
@@ -30,7 +31,6 @@ def create(request):
 	message = thread.get('message')
 	date = thread.get('date')
 	slug = thread.get('slug')
-	print()
 	if thread.get('isClosed'):
 		isClosed = True
 	else:
@@ -49,11 +49,9 @@ def create(request):
 		thread_dict = get_thread_dict(title)
 		return JsonResponse({"code": 0, "response": thread_dict})
 	except DatabaseError:
-		print 2
 		return JsonResponse({"code": 4,
 						   "response": "Oh, we have some really bad error"})
 	thread_dict = get_thread_by_id(thread_id)
-	print thread_id
 	return JsonResponse({"code": 0, "response": thread_dict})
 
 @csrf_exempt
@@ -83,16 +81,36 @@ def details(request):
 
 @csrf_exempt
 def list(request):
+	thread = int(request.GET.get('thread'))
 	user = request.GET.get('user')
 	forum = request.GET.get('forum')
 	since = request.GET.get('since')
 	limit = request.GET.get('limit')
 	order = request.GET.get('order')
+	related = request.GET.getlist('related')
+	relations = []
+	relations.extend(related)
+	threadRelated = False
+	forumRelated = False
+	userRelated = False
+	for related_value in relations:
+		if related_value == "thread":
+			threadRelated = True
+		elif related_value == "forum":
+			forumRelated = True
+		elif related_value == "user":
+			userRelated = True
 	thread_list = get_thread_list(user = user,forum = forum,since = since,order = order,limit = limit)
+	for thread_dict in thread_list:
+		if userRelated:
+			thread_dict['user'] = get_user_dict(thread_dict['user'])
+		if forumRelated:
+			thread_dict['forum'] = get_forum_dict(post_dict['forum'])
 	return JsonResponse({"code": 0, "response": thread_list})
 
 @csrf_exempt
 def listPosts(request):
+	begin = time.time()
 	thread = request.GET.get('thread')
 	since = request.GET.get('since')
 	limit = request.GET.get('limit')
@@ -121,6 +139,8 @@ def listPosts(request):
 			post_dict['forum'] = get_forum_dict(post_dict['forum'])
 		if threadRelated:
 			post_dict['thread'] = get_thread_dict(post_dict['thread'])
+	print(request.get_full_path() + request.body + "-")
+	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt

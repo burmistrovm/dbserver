@@ -11,14 +11,15 @@ class MyDB:
 		self.cursor = None
 
 	def execute(self, sql, args=(), post=False):
-		self.cursor = connection.cursor()
-		with(transaction.atomic()):
-			if post:
-				self.cursor.execute(sql, args)
-				result = self.cursor.lastrowid
-			else:
-				self.cursor.execute(sql, args)
-				result = self.cursor.fetchall()
+		#with(transaction.atomic()):
+		cursor = connection.cursor()
+		if post:
+			cursor.execute(sql, args)
+			result = cursor.lastrowid
+		else:
+			cursor.execute(sql, args)
+			result = cursor.fetchall()
+		cursor.close()
 		return result
 
 	def initConnAndCursor(self):
@@ -153,10 +154,8 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 	post_list = list()
 	if limit == None:
 		limit = len(post_list_sql)
-	print(limit)
 	i=0
 	while (i < int(limit)) and (i < len(post_list_sql)):
-		print(i)
 		post_list.append({
 			'id': str_to_json(post_list_sql[i][0]),
 			'user': str_to_json(post_list_sql[i][1]),
@@ -181,10 +180,8 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 def get_thread_list(user="",since="",forum="",limit="",order="ASC"):
 	if user != "" and user != None:
 		where = "user = '{}'".format(user)
-		print('user')
 	elif forum != "" and forum != None:
 		where = "forum = '{}' ".format(forum)
-		print(forum)
 	since_sql = ""
 	if since != None:
 		since_sql = """AND date >= '{}'""".format(since)
@@ -225,7 +222,6 @@ def get_user_list(forum,limit="",order="ASC"):
 	user_list_sql = db.execute("""SELECT DISTINCT u.user, email, name, username, isAnonymous, about FROM User AS u \
 		INNER JOIN Post AS p ON(p.user = u.email)\
 		WHERE forum = '{forum}' {order} {limit};""".format(forum = forum, order = order_sql, limit = limit_sql))
-	print(len(user_list_sql))
 	user_list = list();
 	for user_sql in user_list_sql:
 		user_list.append({'id': str_to_json(user_sql[0]),
@@ -264,9 +260,8 @@ def get_thread_by_id(thread):
 	thread_list_sql = db.execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
 		WHERE thread = %(thread)s LIMIT 1;""", {'thread': thread})
 	if not thread_list_sql:
-		return list()
+		return dict()
 	thread_sql = thread_list_sql[0]
-	print(thread_sql[8])
 	return {'title': str_to_json(thread_sql[0]),
 			'user': str_to_json(thread_sql[1]), 
 			'forum': str_to_json(thread_sql[2]), 
@@ -370,7 +365,6 @@ def get_subscribed_user_list(thread):
 		WHERE thread = %(thread)s;""", {'thread': thread})
 	result = list()
 	for user in user_list:
-		print(user[0])
 		result.append(get_user_dict(user[0]).get('id'))
 	return result
 

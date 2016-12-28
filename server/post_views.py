@@ -6,10 +6,12 @@ from django.views.decorators.csrf import csrf_exempt
 from common import db, MYSQL_DUPLICATE_ENTITY_ERROR
 from common import get_post_by_id,get_post_dict, get_forum_dict, get_user_dict, get_thread_by_id, add_post_to_thread,get_post_list
 from django.db import connection, DatabaseError, IntegrityError
+import time
 
 
 @csrf_exempt
 def create(request):
+	begin = time.time()
 	post = json.loads(request.body)
 	date = post.get('date')
 	thread = post.get('thread')
@@ -41,10 +43,11 @@ def create(request):
 	else:
 		mpath_que = db.execute("""SELECT mpath FROM Post \
 		WHERE post = %(parent)s;""", {'parent': parent})
-		print(mpath_que[0][0])
 		mpath = mpath_que[0][0] + "." + str(date) + '-' + str(postID)
 	db.execute("""UPDATE Post SET mpath = %(mpath)s WHERE post = %(id)s;""", {'mpath': mpath,'id':postID})
 	#post = get_post_by_id(postID)
+	print(request.get_full_path() + request.body + "-")
+	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response":{'id': postID,
 												'user': user,
 												'thread': thread,
@@ -60,6 +63,7 @@ def create(request):
 
 @csrf_exempt
 def details(request):
+	begin = time.time()
 	post = request.GET.get('post')
 	if not post: 
 		return JsonResponse({"code": 2, "response": "No 'post' key"})
@@ -72,10 +76,13 @@ def details(request):
 	post_dict['user'] = get_user_dict(user)
 	post_dict['forum'] = get_forum_dict(forum)
 	post_dict['thread'] = get_thread_by_id(thread)
+	print(request.get_full_path() + request.body + "-")
+	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_dict})
 
 @csrf_exempt
 def list(request):
+	begin = time.time()
 	thread = request.GET.get('thread')
 	forum = request.GET.get('forum')
 	since = request.GET.get('since')
@@ -105,6 +112,8 @@ def list(request):
 			post_dict['forum'] = get_forum_dict(post_dict['forum'])
 		if threadRelated:
 			post_dict['thread'] = get_thread_dict(post_dict['thread'])
+	print(request.get_full_path() + request.body + "-")
+	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt
