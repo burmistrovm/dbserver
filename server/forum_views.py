@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from django.http import HttpResponse, Http404, HttpRequest
 import requests
-import MySQLdb
 import json 
 from django.http import JsonResponse
-from django.db import connection, DatabaseError, IntegrityError
+from django.db import DatabaseError, IntegrityError
 from django.views.decorators.csrf import csrf_exempt
-from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_forum_dict,get_user_dict,get_post_list,get_thread_by_id,get_thread_list,get_user_list
+from common_functions import execute, get_forum_dict,get_user_dict,get_post_list,get_thread_by_id,get_thread_list,get_user_list
 import time
 
 @csrf_exempt
@@ -20,7 +19,7 @@ def create(request):
 		(%(name)s, %(short_name)s, %(user)s);"""
 	args = {'name': name, 'short_name': short_name, 'user': user}
 	try:
-		db.execute(sql, args, True)
+		execute(sql, args, True)
 	except IntegrityError:
 		forum_dict = get_forum_dict(short_name)
 		return JsonResponse({"code": 0, "response": forum_dict})
@@ -103,21 +102,8 @@ def listUsers(request):
 	forum = request.GET.get('forum')
 	limit = request.GET.get('limit')
 	order = request.GET.get('order')
-	related = request.GET.getlist('related')
-	relations = list()
-	if type(related) is list:
-		relations.extend(related)
-	threadRelated = False
-	forumRelated = False
-	userRelated = False
-	for related_value in relations:
-		if related_value == "thread":
-			threadRelated = True
-		elif related_value == "forum":
-			forumRelated = True
-		elif related_value == "user":
-			userRelated = True
-	user_list = get_user_list(forum = forum, order = order,limit = limit)
+	since = request.GET.get('since_id')
+	user_list = get_user_list(forum = forum, order = order,limit = limit,since = since)
 	print(request.get_full_path() + request.body + "-")
 	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": user_list})

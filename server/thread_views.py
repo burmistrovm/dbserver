@@ -1,24 +1,23 @@
 from django.http import HttpResponse, Http404, HttpRequest
 import requests
-import json, MySQLdb
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db import connection, DatabaseError, IntegrityError
-from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_thread_dict, get_user_dict, get_forum_dict,get_thread_by_id,get_subscription,get_post_list,get_thread_list
+from django.db import DatabaseError, IntegrityError
+from common_functions import execute, get_thread_dict, get_user_dict, get_forum_dict,get_thread_by_id,get_subscription,get_post_list,get_thread_list
 import time
-
 @csrf_exempt
 def open(request):
 	thread_query = json.loads(request.body.decode("utf-8"))
 	thread = int(thread_query.get('thread'))
-	db.execute("""UPDATE Thread SET isClosed = False WHERE thread = %(thread)s;""", {'thread': thread}, True)
+	execute("""UPDATE Thread SET isClosed = False WHERE thread = %(thread)s;""", {'thread': thread}, True)
 	return JsonResponse({"code": 0, "response": thread})
 
 @csrf_exempt
 def close(request):
 	thread_query = json.loads(request.body.decode("utf-8"))
 	thread = int(thread_query.get('thread'))
-	db.execute("""UPDATE Thread SET isClosed = True WHERE thread = %(thread)s;""", {'thread': thread}, True)
+	execute("""UPDATE Thread SET isClosed = True WHERE thread = %(thread)s;""", {'thread': thread}, True)
 	return JsonResponse({"code": 0, "response": thread})
 
 
@@ -44,7 +43,7 @@ def create(request):
 	args = {'title': title, 'user': user, 'forum': forum, 'message': message, 'date': date, 
 	'slug': slug, 'isDeleted': isDeleted, 'isClosed': isClosed}
 	try:
-		thread_id = db.execute(sql, args, True)
+		thread_id = execute(sql, args, True)
 	except IntegrityError:
 		thread_dict = get_thread_dict(title)
 		return JsonResponse({"code": 0, "response": thread_dict})
@@ -81,7 +80,7 @@ def details(request):
 
 @csrf_exempt
 def list(request):
-	thread = int(request.GET.get('thread'))
+	thread = request.GET.get('thread')
 	user = request.GET.get('user')
 	forum = request.GET.get('forum')
 	since = request.GET.get('since')
@@ -118,6 +117,7 @@ def listPosts(request):
 	sort = request.GET.get('sort')
 	if sort == None:
 		sort = "flat"
+	print(sort)
 	related = request.GET.getlist('related')
 	relations = []
 	relations.extend(related)
@@ -130,17 +130,17 @@ def listPosts(request):
 def remove(request):
 	thread_query = json.loads(request.body)
 	thread_ID = thread_query.get('thread')
-	db.execute("""UPDATE Post SET isDeleted = 1 WHERE thread = '%(thread)s';""", {'thread': thread_ID}, True)
-	db.execute("""UPDATE Thread SET posts = 0, isDeleted = True WHERE thread = %(thread)s;""", {'thread': thread_ID}, True)
+	execute("""UPDATE Post SET isDeleted = 1 WHERE thread = '%(thread)s';""", {'thread': thread_ID}, True)
+	execute("""UPDATE Thread SET posts = 0, isDeleted = True WHERE thread = %(thread)s;""", {'thread': thread_ID}, True)
 	return JsonResponse({"code": 0, "response": {"thread": thread_ID}})
 
 @csrf_exempt
 def restore(request):
 	thread_query = json.loads(request.body)
 	thread_ID = thread_query.get('thread')
-	db.execute("UPDATE Post SET isDeleted = False WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""),{}, True)
-	posts = int(db.execute("SELECT COUNT(*) FROM Post WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""))[0][0])
-	db.execute("""UPDATE Thread SET posts = %(posts)s, isDeleted = False WHERE thread = %(thread)s;""", {'posts':posts,'thread': thread_ID}, True)
+	execute("UPDATE Post SET isDeleted = False WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""),{}, True)
+	posts = int(execute("SELECT COUNT(*) FROM Post WHERE thread = '{thread}';".format(thread = str(thread_ID) + ""))[0][0])
+	execute("""UPDATE Thread SET posts = %(posts)s, isDeleted = False WHERE thread = %(thread)s;""", {'posts':posts,'thread': thread_ID}, True)
 	return JsonResponse({"code": 0, "response": {"thread": thread_ID}})
 
 @csrf_exempt
@@ -149,7 +149,7 @@ def subscribe(request):
 	user = subscription.get('user')
 	thread = subscription.get('thread')
 	try:
-		subscription_id = db.execute("""INSERT INTO Subscription (subscriber, thread) VALUES \
+		subscription_id = execute("""INSERT INTO Subscription (subscriber, thread) VALUES \
 			(%(user)s, %(thread)s);""", {'user': user, 'thread': thread}, True)
 	except IntegrityError:
 		1
@@ -161,7 +161,7 @@ def unsubscribe(request):
 	subscription = json.loads(request.body.decode("utf-8"))
 	user = subscription.get('user')
 	thread =subscription.get('thread')
-	subscription_id = db.execute("""DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;""",
+	subscription_id = execute("""DELETE FROM Subscription WHERE subscriber = %(subscriber)s AND thread = %(thread)s;""",
 		   {'subscriber': user, 'thread': thread}, True)
 	return JsonResponse({"code": 0, "response": {'thread': thread, 'user': user}})
 
@@ -172,7 +172,7 @@ def update(request):
 	message = up_thread.get('message')
 	slug = up_thread.get('slug')
 	args = {'thread': thread, 'message': message, 'slug': slug}
-	db.execute("""UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;""", args, True)
+	execute("""UPDATE Thread SET message = %(message)s, slug = %(slug)s WHERE thread = %(thread)s;""", args, True)
 	thread_dict = get_thread_by_id(thread)
 	return JsonResponse({"code": 0, "response": thread_dict})
 
@@ -182,10 +182,10 @@ def vote(request):
 	thread = voteBody.get('thread')
 	vote = voteBody.get('vote')
 	if vote == 1:
-		db.execute("""UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %(thread)s;""",
+		execute("""UPDATE Thread SET likes = likes + 1, points = points + 1 WHERE thread = %(thread)s;""",
 				   {'thread': thread}, True)
 	elif vote == -1:
-		db.execute("""UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;""",
+		execute("""UPDATE Thread SET dislikes = dislikes + 1, points = points - 1 WHERE thread = %(thread)s;""",
 				   {'thread': thread}, True)
 	thread_dict = get_thread_by_id(thread)
 	return JsonResponse({"code": 0, "response": thread_dict})

@@ -3,56 +3,33 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 
 
-MYSQL_DUPLICATE_ENTITY_ERROR = 1062
-
-class MyDB:
-	def __init__(self):
-		self.connection = None
-		self.cursor = None
-
-	def execute(self, sql, args=(), post=False):
-		#with(transaction.atomic()):
-		cursor = connection.cursor()
-		if post:
-			cursor.execute(sql, args)
-			result = cursor.lastrowid
-		else:
-			cursor.execute(sql, args)
-			result = cursor.fetchall()
-		cursor.close()
-		return result
-
-	def initConnAndCursor(self):
-		if not self.connection or not self.connection.open:
-			self.connection = connection(host="localhost", user="django", passwd="24081994", db="dbproj")
-			self.connection.set_character_set('utf8')
-
-	def closeConnection(self):
-		self.connection.close()
-db = MyDB()
+def execute(sql, args=(), post=False):
+	cursor = connection.cursor()
+	if post:
+		cursor.execute(sql, args)
+		result = cursor.lastrowid
+	else:
+		cursor.execute(sql, args)
+		result = cursor.fetchall()
+	cursor.close()
+	return result
 
 @csrf_exempt
 def clear(request):
-	'''TRUNCATE TABLE %s'''
-	db.execute("""TRUNCATE TABLE Forum;""", post=True)
-	db.execute("""TRUNCATE TABLE User;""", post=True)
-	db.execute("""TRUNCATE TABLE Post;""", post=True)
-	db.execute("""TRUNCATE TABLE Thread;""", post=True)
-	db.execute("""TRUNCATE TABLE Subscription;""", post=True)
-	db.execute("""TRUNCATE TABLE Follower;""", post=True)
-	#db.execute("""DELETE User.* FROM User;""", post=True)
-	#db.execute("""DELETE Post.* FROM  Post;""")
-	#db.execute("""DELETE Thread.* FROM  Thread;""", post=True)
-	#db.execute("""DELETE Subscription.* FROM Subscription;""", post=True)
-	#db.execute("""DELETE Follower.* FROM Follower;""", post=True)
+	execute("""TRUNCATE TABLE Forum;""", post=True)
+	execute("""TRUNCATE TABLE User;""", post=True)
+	execute("""TRUNCATE TABLE Post;""", post=True)
+	execute("""TRUNCATE TABLE Thread;""", post=True)
+	execute("""TRUNCATE TABLE Subscription;""", post=True)
+	execute("""TRUNCATE TABLE Follower;""", post=True)
 	return JsonResponse({"code": 0, "response": "OK"})
 
 @csrf_exempt
 def status(request):
-	user_count = db.execute("""SELECT count(*) FROM User;""")
-	thread_count = db.execute("""SELECT count(*) FROM Thread;""")
-	forum_count = db.execute("""SELECT count(*) FROM Forum;""")
-	post_count = db.execute("""SELECT count(*) FROM Post;""")
+	user_count = execute("""SELECT count(*) FROM User;""")
+	thread_count = execute("""SELECT count(*) FROM Thread;""")
+	forum_count = execute("""SELECT count(*) FROM Forum;""")
+	post_count = execute("""SELECT count(*) FROM Post;""")
 	users = user_count[0][0]
 	threads = thread_count[0][0]
 	forums = forum_count[0][0]
@@ -67,7 +44,7 @@ def str_to_json(value, is_bool=False):
 	return value
 
 def get_user_dict(email):
-	user_list_sql = db.execute("""SELECT user, email, name, username, isAnonymous, about FROM User \
+	user_list_sql = execute("""SELECT user, email, name, username, isAnonymous, about FROM User \
 		WHERE email = %(email)s;""", {'email': email})
 	if not user_list_sql:
 		return dict()
@@ -83,7 +60,7 @@ def get_user_dict(email):
 			'subscriptions': get_subscribed_threads_list(user_sql[1])}
 
 def get_forum_dict(short_name):
-	forum_list_sql = db.execute("""SELECT forum, name, short_name, user FROM Forum \
+	forum_list_sql = execute("""SELECT forum, name, short_name, user FROM Forum \
 		WHERE short_name = %(short_name)s;""", {'short_name': short_name})
 	if not forum_list_sql:
 		return dict()
@@ -108,6 +85,12 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			userRelated = True
 	if thread != "" and thread != None:
 		where = "Post.thread = '{}' ".format(thread)
+
+	if user != "" and user != None:
+		where = "Post.user = '{}'".format(user)
+
+	elif forum != "" and forum != None:
+		where = "Post.forum = '{}' ".format(forum)
 		realated_items_sql += """,User.user, User.email, User.name, User.username, User.isAnonymous, User.about"""
 		realated_join_sql += """LEFT JOIN User ON(Post.user = email)"""
 		realated_items_sql += """,Forum.forum, Forum.name, Forum.short_name, Forum.user"""
@@ -115,12 +98,6 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 		realated_items_sql += """,Thread.title, Thread.user, Thread.forum, Thread.message, Thread.date, Thread.slug, Thread.isDeleted,\
 		Thread.isClosed, Thread.thread, Thread.posts, Thread.points, Thread.likes, Thread.dislikes"""
 		realated_join_sql += """LEFT JOIN Thread ON(Post.thread = Thread.thread)"""
-
-	if user != "":
-		where = "Post.user = '{}'".format(user)
-
-	elif forum != "" and forum != None:
-		where = "Post.forum = '{}' ".format(forum)
 
 	since_sql = ""
 	if since != None:
@@ -138,37 +115,38 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath {related_items} FROM Post {realated_join} \
 			WHERE {where} {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, 
 				limit = limit_sql,related_items=realated_items_sql,realated_join=realated_join_sql)
-		post_list_sql = db.execute(sql)
-
+		print(sql)
+		post_list_sql = execute(sql)
 
 	if sort == "tree":
 		sql = "SELECT Post.post, Post.user, Post.thread, Post.forum, Post.message, Post.parent, Post.date, Post.likes, Post.dislikes, Post.points, \
 			Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath {related_items} FROM Post {realated_join} \
-			WHERE {where} and parent IS NULL {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, limit = limit_sql)
-		post_parent_list_sql = db.execute(sql)
+			WHERE {where} and parent IS NULL {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, limit = limit_sql,
+				related_items=realated_items_sql,realated_join=realated_join_sql)
+		post_parent_list_sql = execute(sql)
 		lenght = len(post_parent_list_sql)
 		post_list_sql = list()
 		for post in post_parent_list_sql:
 			parent_mpath = post[15]
-			post_child_list_sql = db.execute(("SELECT Post.post, Post.user, Post.thread, Post.forum, Post.message, Post.parent, Post.date, \
+			post_child_list_sql = execute(("SELECT Post.post, Post.user, Post.thread, Post.forum, Post.message, Post.parent, Post.date, \
 				Post.likes, Post.dislikes, Post.points, Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath \
 				{related_items} FROM Post {realated_join} WHERE {where} AND parent IS NOT NULL AND mpath \
-				LIKE '{parent}' ORDER BY Post.mpath, Post.date;").format(where = where,parent = parent_mpath +"%%"))
+				LIKE '{parent}' ORDER BY Post.mpath, Post.date;").format(where = where,parent = parent_mpath +"%%",related_items=realated_items_sql,realated_join=realated_join_sql))
 			post_list_sql.append(post)
 			post_list_sql.extend(post_child_list_sql)
 
 	if sort == "parent_tree":
 		sql = "SELECT Post.post, Post.user, Post.thread, Post.forum, Post.message, Post.parent, Post.date, Post.likes, Post.dislikes, Post.points, \
 			Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath {related_items} FROM Post {realated_join} \
-			WHERE {where} AND Post.parent IS NULL {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, limit = limit_sql)
-		post_parent_list_sql = db.execute(sql)
+			WHERE {where} AND Post.parent IS NULL {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, limit = limit_sql,related_items=realated_items_sql,realated_join=realated_join_sql)
+		post_parent_list_sql = execute(sql)
 		lenght = len(post_parent_list_sql)
 		post_list_sql = list()
 		for post in post_parent_list_sql:
 			parent_mpath = post[15]
-			post_child_list_sql = db.execute(("SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
-			isSpam, isEdited, isDeleted, isHighlighted, isApproved, mpath {related_items} FROM Post {realated_join} \
-			WHERE {where} AND parent IS NOT NULL AND mpath LIKE '{parent}' ORDER BY mpath, date;").format(where = where, parent = parent_mpath +"%%"))
+			post_child_list_sql = execute(("SELECT Post.post, Post.user, Post.thread, Post.forum,Post.message, Post.parent, Post.date, Post.likes, Post.dislikes, Post.points, \
+			Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath {related_items} FROM Post {realated_join} \
+			WHERE {where} AND Post.parent IS NOT NULL AND Post.mpath LIKE '{parent}' ORDER BY Post.mpath, Post.date;").format(where = where, parent = parent_mpath +"%%",related_items=realated_items_sql,realated_join=realated_join_sql))
 			post_list_sql.append(post)
 			post_list_sql.extend(post_child_list_sql)
 		limit = len(post_list_sql)
@@ -195,7 +173,7 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			'isApproved': str_to_json(post_list_sql[i][14], True),
 			'mpath': str_to_json(post_list_sql[i][15])
 		})
-		if thread != "" and thread != None:
+		if forum != "" and forum != None:
 			if userRelated:
 				post_list[i]['user'] = {'id': post_list_sql[i][16],
 				'email': post_list_sql[i][17],
@@ -240,7 +218,7 @@ def get_thread_list(user="",since="",forum="",limit="",order="ASC"):
 	limit_sql = ""
 	if limit != None:
 		limit_sql = """LIMIT {}""".format(limit)
-	thread_list_sql = db.execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
+	thread_list_sql = execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
 		WHERE {where} {since} {order} {limit};""".format(where = where, order = order_sql, limit = limit_sql, since = since_sql))
 	thread_list = list();
 	for thread_sql in thread_list_sql:
@@ -261,18 +239,34 @@ def get_thread_list(user="",since="",forum="",limit="",order="ASC"):
 			})
 	return thread_list;
 
-def get_user_list(forum,limit="",order="ASC"):
+def get_user_list(forum,since,limit,order="ASC"):
+	since_sql = ""
+	if since != None:
+		since_sql = """AND u.user >= {}""".format(since)
 	order_sql = """ORDER BY name """
 	if order != None:
 		order_sql = order_sql + """{}""".format(order)
 	limit_sql = ""
 	if limit != None:
-		limit_sql = """LIMIT {}""".format(limit)
-	user_list_sql = db.execute("""SELECT DISTINCT u.user, email, name, username, isAnonymous, about FROM User AS u \
+		limit = int(limit)
+	else:
+		limit = -1
+	user_list_sql = execute("""SELECT DISTINCT u.user, email, name, username, isAnonymous, about FROM User AS u \
 		INNER JOIN Post AS p ON(p.user = u.email)\
-		WHERE forum = '{forum}' {order} {limit};""".format(forum = forum, order = order_sql, limit = limit_sql))
+		WHERE forum = '{forum}' {since} {order};""".format(forum = forum, order = order_sql, since = since_sql))
 	user_list = list();
-	for user_sql in user_list_sql:
+	seen = set();
+	result = list();
+	i = 0
+	for x in user_list_sql:
+		if x in seen:
+			continue
+		seen.add(x)
+		result.append(x)
+		i = i + 1
+		if i == limit:
+			break
+	for user_sql in result:
 		user_list.append({'id': str_to_json(user_sql[0]),
 			'email': str_to_json(user_sql[1]),
 			'name': str_to_json(user_sql[2]),
@@ -284,7 +278,7 @@ def get_user_list(forum,limit="",order="ASC"):
 	
 
 def get_thread_dict(title):
-	thread_list_sql = db.execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
+	thread_list_sql = execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
 		WHERE title = %(title)s LIMIT 1;""", {'title': title})
 	if not thread_list_sql:
 		return list()
@@ -306,7 +300,7 @@ def get_thread_dict(title):
 			}
 
 def get_thread_by_id(thread):
-	thread_list_sql = db.execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
+	thread_list_sql = execute("""SELECT title, user, forum, message, date, slug, isDeleted, isClosed, thread, posts, points, likes, dislikes FROM Thread \
 		WHERE thread = %(thread)s LIMIT 1;""", {'thread': thread})
 	if not thread_list_sql:
 		return dict()
@@ -333,7 +327,7 @@ def get_post_by_id(postId):
 		isSpam, isEdited, isDeleted, isHighlighted, isApproved, mpath FROM Post \
 		WHERE post = %(id)s LIMIT 1;"""
 
-	post_list_sql = db.execute(sql, {'id': postId})
+	post_list_sql = execute(sql, {'id': postId})
 	if not post_list_sql:
 		return list()
 
@@ -361,7 +355,7 @@ def get_post_dict(user, date):
 		isSpam, isEdited, isDeleted, isHighlighted, isApproved, mpath FROM Post \
 		WHERE user = %(user)s AND date = %(date)s LIMIT 1;"""
 
-	post_list_sql = db.execute(sql, {'user':user, 'date':date})
+	post_list_sql = execute(sql, {'user':user, 'date':date})
 	if not post_list_sql:
 		return list()
 
@@ -385,24 +379,24 @@ def get_post_dict(user, date):
 
 
 def add_post_to_thread(thread):
-	db.execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread}, post=True)
+	execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread}, post=True)
 
 def get_followers_list(email):
-	follower_list = db.execute("""SELECT follower FROM Follower
+	follower_list = execute("""SELECT follower FROM Follower
 		WHERE followee = %(email)s;""", {'email': email})
 	if not follower_list:
 		return list()
 	return follower_list[0]
 
 def get_following_list(email):
-	following_list = db.execute("""SELECT followee FROM Follower
+	following_list = execute("""SELECT followee FROM Follower
 		WHERE follower = %(email)s;""", {'email': email})
 	if not following_list:
 		return list()
 	return following_list[0]
 
 def get_subscribed_threads_list(email):
-	subscriptions_list = db.execute("""SELECT thread FROM Subscription
+	subscriptions_list = execute("""SELECT thread FROM Subscription
 		WHERE subscriber = %(email)s;""", {'email': email})
 	result = list()
 	for thread in subscriptions_list:
@@ -410,7 +404,7 @@ def get_subscribed_threads_list(email):
 	return result
 
 def get_subscribed_user_list(thread):
-	user_list = db.execute("""SELECT subscriber FROM Subscription
+	user_list = execute("""SELECT subscriber FROM Subscription
 		WHERE thread = %(thread)s;""", {'thread': thread})
 	result = list()
 	for user in user_list:
@@ -418,7 +412,7 @@ def get_subscribed_user_list(thread):
 	return result
 
 def get_subscription(user, thread):
-	subscriptions_list = db.execute("""SELECT thread, subscriber FROM Subscription
+	subscriptions_list = execute("""SELECT thread, subscriber FROM Subscription
 		WHERE subscriber = %(user)s AND thread = %(thread)s;""", {'user': user,'thread': thread})
 	if not subscriptions_list:
 		return list()

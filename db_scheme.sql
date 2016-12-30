@@ -1,5 +1,5 @@
 USE dbproj;
-DROP TABLE Forum, Post, Subscription, Thread, User, Follower;
+DROP TABLE IF EXISTS Forum, Post, Subscription, Thread, User, Follower;
 
 CREATE TABLE IF NOT EXISTS `User` (
 	`user` INT NOT NULL AUTO_INCREMENT, -- user id

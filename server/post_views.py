@@ -1,13 +1,12 @@
 from django.http import HttpResponse, Http404, HttpRequest
 import requests
-import json, MySQLdb
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from common import db, MYSQL_DUPLICATE_ENTITY_ERROR
-from common import get_post_by_id,get_post_dict, get_forum_dict, get_user_dict, get_thread_by_id, add_post_to_thread,get_post_list
-from django.db import connection, DatabaseError, IntegrityError
+from common_functions import execute
+from common_functions import get_post_by_id,get_post_dict, get_forum_dict, get_user_dict, get_thread_by_id, add_post_to_thread,get_post_list
+from django.db import DatabaseError, IntegrityError
 import time
-
 
 @csrf_exempt
 def create(request):
@@ -30,7 +29,7 @@ def create(request):
 	args = {'date': date, 'thread': thread, 'forum': forum, 'message': message, 'user': user, 
 	'isSpam': isSpam, 'isDeleted': isDeleted, 'isEdited': isEdited, 'isApproved': isApproved, 'isHighlighted': isHighlighted, 'parent': parent, 'mpath': mpath}
 	try:
-		postID = db.execute(sql, args, True)
+		postID = execute(sql, args, True)
 	except IntegrityError:
 		post_dict = get_post_dict(user, date)
 		return JsonResponse({"code": 0, "response": post_dict})
@@ -41,10 +40,10 @@ def create(request):
 	if parent == None:
 		mpath = mpath + date + '-' + str(postID)
 	else:
-		mpath_que = db.execute("""SELECT mpath FROM Post \
+		mpath_que = execute("""SELECT mpath FROM Post \
 		WHERE post = %(parent)s;""", {'parent': parent})
 		mpath = mpath_que[0][0] + "." + str(date) + '-' + str(postID)
-	db.execute("""UPDATE Post SET mpath = %(mpath)s WHERE post = %(id)s;""", {'mpath': mpath,'id':postID})
+	execute("""UPDATE Post SET mpath = %(mpath)s WHERE post = %(id)s;""", {'mpath': mpath,'id':postID})
 	#post = get_post_by_id(postID)
 	print(request.get_full_path() + request.body + "-")
 	print((time.time()-begin)*1000)
@@ -105,8 +104,8 @@ def remove(request):
 	postID = post_query.get('post')
 	post = get_post_by_id(postID)
 	thread_id = post['thread']
-	db.execute("""UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;""", {'post': postID}, True)
-	db.execute("""UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
+	execute("""UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;""", {'post': postID}, True)
+	execute("""UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
 	return JsonResponse({"code": 0, "response": {"post": postID}})
 
 @csrf_exempt
@@ -115,8 +114,8 @@ def restore(request):
 	postID = post_query.get('post')
 	post = get_post_by_id(postID)
 	thread_id = post['thread']
-	db.execute("""UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;""", {'post': postID}, True)
-	db.execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
+	execute("""UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;""", {'post': postID}, True)
+	execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
 	return JsonResponse({"code": 0, "response": {"post": postID}})
 
 @csrf_exempt
@@ -125,7 +124,7 @@ def update(request):
 	post_ID = int(post_query.get('post'))
 	message = post_query.get('message')
 	args = {'post': post_ID, 'message': message}
-	db.execute("""UPDATE Post SET message = %(message)s WHERE post = %(post)s;""", args, True)
+	execute("""UPDATE Post SET message = %(message)s WHERE post = %(post)s;""", args, True)
 	post_dict = get_post_by_id(post_ID)
 	return JsonResponse({"code": 0, "response": post_dict})
 
@@ -136,10 +135,10 @@ def vote(request):
 	post = voteBody.get('post')
 	vote = voteBody.get('vote')
 	if vote == 1:
-		db.execute("""UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;""",
+		execute("""UPDATE Post SET likes = likes + 1, points = points + 1 WHERE post = %(post)s;""",
 				   {'post': post}, True)
 	elif vote == -1:
-		db.execute("""UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;""",
+		execute("""UPDATE Post SET dislikes = dislikes + 1, points = points - 1 WHERE post = %(post)s;""",
 				   {'post': post}, True)
 	post_dict = get_post_by_id(post)
 	print(request.get_full_path() + request.body + "-")

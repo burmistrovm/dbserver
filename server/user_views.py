@@ -1,10 +1,10 @@
 from django.http import HttpResponse, Http404, HttpRequest
 import requests
-import json, MySQLdb
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from common import db, MYSQL_DUPLICATE_ENTITY_ERROR, get_user_dict,get_followers_list,get_following_list,get_subscribed_threads_list,get_post_list
-from django.db import connection, DatabaseError, IntegrityError
+from common_functions import execute, get_user_dict,get_followers_list,get_following_list,get_subscribed_threads_list,get_post_list
+from django.db import DatabaseError, IntegrityError
 import time
 
 @csrf_exempt
@@ -19,7 +19,7 @@ def create(request):
 		(%(username)s, %(about)s, %(name)s, %(email)s, %(isAnonymous)s);"""
 	args = {'username': username, 'about': about, 'name': name, 'email': email, 'isAnonymous': isAnonymous}
 	try:
-		ID = db.execute(sql, args, True)
+		ID = execute(sql, args, True)
 	except IntegrityError:
 		return JsonResponse({"code": 5,
 							   "response": "This user already exists"})
@@ -50,7 +50,7 @@ def follow(request):
 	follow = json.loads(request.body.decode("utf-8"))
 	follower = follow.get('follower')
 	followee = follow.get('followee')
-	db.execute("""INSERT INTO Follower (follower, followee) VALUES \
+	execute("""INSERT INTO Follower (follower, followee) VALUES \
 		(%(follower)s, %(followee)s);""", {'follower': follower, 'followee': followee})
 	user_dict = get_user_dict(follower)
 	user_dict['followers'] = get_followers_list(follower)
@@ -113,7 +113,7 @@ def unfollow(request):
 	follower = follow.get('follower')
 	followee = follow.get('followee')
 	args = {'follower': follower, 'following': followee}
-	db.execute("""DELETE FROM Follower WHERE follower = %(follower)s AND followee = %(following)s;""", args, True)
+	execute("""DELETE FROM Follower WHERE follower = %(follower)s AND followee = %(following)s;""", args, True)
 	user_dict = get_user_dict(follower)
 	user_dict['followers'] = get_followers_list(follower)
 	user_dict['following'] = get_following_list(follower)
@@ -127,6 +127,6 @@ def updateProfile(request):
 	name = user.get('name')
 	about = user.get('about')
 	args = {'about': about, 'name': name, 'email': email}
-	db.execute("""UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;""", args, True)
+	execute("""UPDATE User SET about = %(about)s, name = %(name)s WHERE email = %(email)s;""", args, True)
 	user_dict = get_user_dict(email)
 	return JsonResponse({"code": 0, "response": user_dict})

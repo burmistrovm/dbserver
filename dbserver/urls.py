@@ -19,7 +19,7 @@ from server import user_views
 from server import forum_views
 from server import post_views
 from server import thread_views
-from server import common
+from server import common_functions
 
 user_patterns = [
     url(r'^create/', user_views.create),
@@ -66,8 +66,8 @@ post_patterns = [
 ]
 
 urlpatterns = [
-    url(r'^db/api/status/', common.status),
-    url(r'^db/api/clear/', common.clear),
+    url(r'^db/api/status/', common_functions.status),
+    url(r'^db/api/clear/', common_functions.clear),
     url(r'^db/api/user/',include(user_patterns)),
     url(r'^db/api/forum/',include(forum_patterns)),
     url(r'^db/api/thread/',include(thread_patterns)),
