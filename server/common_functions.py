@@ -251,7 +251,7 @@ def get_user_list(forum,since,limit,order="ASC"):
 		limit = int(limit)
 	else:
 		limit = -1
-	user_list_sql = execute("""SELECT DISTINCT u.user, email, name, username, isAnonymous, about FROM User AS u \
+	user_list_sql = execute("""SELECT u.user, email, name, username, isAnonymous, about FROM User AS u \
 		INNER JOIN Post AS p ON(p.user = u.email)\
 		WHERE forum = '{forum}' {since} {order};""".format(forum = forum, order = order_sql, since = since_sql))
 	user_list = list();
