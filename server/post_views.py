@@ -93,6 +93,8 @@ def remove(request):
 	post_query = json.loads(request.body)
 	postID = post_query.get('post')
 	post = get_post_by_id(postID)
+	if type(post) == type([]):
+		return JsonResponse({"code": 1, "response": "Empty set"})
 	thread_id = post['thread']
 	execute("""UPDATE Post SET isDeleted = 1 WHERE post = %(post)s;""", {'post': postID}, True)
 	execute("""UPDATE Thread SET posts = posts - 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)
@@ -103,6 +105,8 @@ def restore(request):
 	post_query = json.loads(request.body)
 	postID = post_query.get('post')
 	post = get_post_by_id(postID)
+	if type(post) == type([]):
+		return JsonResponse({"code": 1, "response": "Empty set"})
 	thread_id = post['thread']
 	execute("""UPDATE Post SET isDeleted = 0 WHERE post = %(post)s;""", {'post': postID}, True)
 	execute("""UPDATE Thread SET posts = posts + 1 WHERE thread = %(thread)s;""", {'thread': thread_id}, post=True)

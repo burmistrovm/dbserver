@@ -51,7 +51,10 @@ def listPosts(request):
 	relations = list()
 	if type(related) is list:
 		relations.extend(related)
-	post_list = get_post_list(forum = forum,since = since,order = order,limit = limit,relations = relations)
+	try:
+		post_list = get_post_list(forum = forum,since = since,order = order,limit = limit,relations = relations)
+	except:
+		return JsonResponse({"code": 1, "response": "Empty set"})
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt

@@ -150,10 +150,10 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			post_list_sql.extend(post_child_list_sql)
 		limit = len(post_list_sql)
 	post_list = list()
-	if limit == None:
-		limit = len(post_list_sql)
 	i=0
-	while (i < int(limit)) and (i < len(post_list_sql)):
+	if limit ==None:
+		limit = -1
+	while (i != int(limit)) and (i < len(post_list_sql)):
 		post_list.append({
 			'id': str_to_json(post_list_sql[i][0]),
 			'user': str_to_json(post_list_sql[i][1]),
@@ -312,11 +312,9 @@ def get_post_by_id(postId):
 	sql = """SELECT post, user, thread, forum, message, parent, date, likes, dislikes, points, \
 		isSpam, isEdited, isDeleted, isHighlighted, isApproved, mpath FROM Post \
 		WHERE post = %(id)s LIMIT 1;"""
-
 	post_list_sql = execute(sql, {'id': postId})
 	if not post_list_sql:
 		return list()
-
 	post_sql = post_list_sql[0]
 	return {'id': str_to_json(post_sql[0]),
 			'user': str_to_json(post_sql[1]),

@@ -119,7 +119,10 @@ def listPosts(request):
 	related = request.GET.getlist('related')
 	relations = []
 	relations.extend(related)
-	post_list = get_post_list(thread = thread,since = since,order = order,limit = limit,sort = sort,relations = relations)
+	try:
+		post_list = get_post_list(thread = thread,since = since,order = order,limit = limit,sort = sort,relations = relations)
+	except:
+		return JsonResponse({"code": 1, "response": "Empty set"})
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt
