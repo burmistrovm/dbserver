@@ -109,7 +109,6 @@ def list(request):
 
 @csrf_exempt
 def listPosts(request):
-	begin = time.time()
 	thread = request.GET.get('thread')
 	since = request.GET.get('since')
 	limit = request.GET.get('limit')
@@ -117,13 +116,10 @@ def listPosts(request):
 	sort = request.GET.get('sort')
 	if sort == None:
 		sort = "flat"
-	print(sort)
 	related = request.GET.getlist('related')
 	relations = []
 	relations.extend(related)
 	post_list = get_post_list(thread = thread,since = since,order = order,limit = limit,sort = sort,relations = relations)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt

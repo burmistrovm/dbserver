@@ -10,7 +10,6 @@ import time
 
 @csrf_exempt
 def create(request):
-	begin = time.time()
 	forum = json.loads(request.body)
 	name = forum.get('name')
 	short_name = forum.get('short_name')
@@ -27,13 +26,10 @@ def create(request):
 		return JsonResponse({"code": 4,
 						   "response": "Oh, we have some really bad error"})
 	forum_dict = get_forum_dict(short_name)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": forum_dict})
 
 @csrf_exempt
 def details(request):
-	begin = time.time()
 	short_name = request.GET.get('forum')
 	if not short_name:
 		return JsonResponse({"code": 2, "response": "No 'forum' key"})
@@ -43,13 +39,10 @@ def details(request):
 	email = forum_dict.get('user')
 	user = get_user_dict(email)
 	forum_dict.update({'user': user})
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": forum_dict})
 
 @csrf_exempt
 def listPosts(request):
-	begin = time.time()
 	forum = request.GET.get('forum')
 	since = request.GET.get('since')
 	limit = request.GET.get('limit')
@@ -59,13 +52,10 @@ def listPosts(request):
 	if type(related) is list:
 		relations.extend(related)
 	post_list = get_post_list(forum = forum,since = since,order = order,limit = limit,relations = relations)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt
 def listThreads(request):
-	begin = time.time()
 	forum = request.GET.get('forum')
 	limit = request.GET.get('limit')
 	order = request.GET.get('order')
@@ -92,18 +82,13 @@ def listThreads(request):
 			thread_dict['forum'] = get_forum_dict(thread_dict['forum'])
 		if threadRelated:
 			thread_dict['thread'] = get_thread_dict(thread_dict['thread'])
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": thread_list})
 
 @csrf_exempt
 def listUsers(request):
-	begin = time.time()
 	forum = request.GET.get('forum')
 	limit = request.GET.get('limit')
 	order = request.GET.get('order')
 	since = request.GET.get('since_id')
 	user_list = get_user_list(forum = forum, order = order,limit = limit,since = since)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": user_list})

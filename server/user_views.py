@@ -60,7 +60,6 @@ def follow(request):
 
 @csrf_exempt
 def listFollowers(request):
-	begin = time.time()
 	email = request.GET.get('user')
 	if not email:
 		return JsonResponse({"code": 2, "response": "No 'user' key"})
@@ -72,13 +71,10 @@ def listFollowers(request):
 		curr_follower['following'] = get_following_list(follower)
 		curr_follower['subscriptions'] = get_subscribed_threads_list(follower)
 		followers_list.append(curr_follower)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": followers_list})
 
 @csrf_exempt
 def listFollowing(request):
-	begin = time.time()
 	email = request.GET.get('user')
 	if not email:
 		return JsonResponse({"code": 2, "response": "No 'user' key"})
@@ -90,21 +86,15 @@ def listFollowing(request):
 		curr_followee['following'] = get_following_list(followee)
 		curr_followee['subscriptions'] = get_subscribed_threads_list(followee)
 		followings_list.append(curr_followee)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
 	return JsonResponse({"code": 0, "response": followings_list})
 
 @csrf_exempt
 def listPosts(request):
-	begin = time.time()
 	user = request.GET.get('user')
 	since = request.GET.get('since')
 	limit = request.GET.get('limit')
 	order = request.GET.get('order')
 	post_list = get_post_list(user=user,since=since,order=order,limit=limit)
-	print(request.get_full_path() + request.body + "-")
-	print((time.time()-begin)*1000)
-	#return JsonResponse({"code": 0, "response": post_list})
 	return JsonResponse({"code": 0, "response": post_list})
 
 @csrf_exempt

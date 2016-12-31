@@ -115,7 +115,6 @@ def get_post_list(user="", thread="", forum="", since="", order="", limit="",sor
 			Post.isSpam, Post.isEdited, Post.isDeleted, Post.isHighlighted, Post.isApproved, Post.mpath {related_items} FROM Post {realated_join} \
 			WHERE {where} {since} {order} {limit};".format(where = where, order = order_sql, since = since_sql, 
 				limit = limit_sql,related_items=realated_items_sql,realated_join=realated_join_sql)
-		print(sql)
 		post_list_sql = execute(sql)
 
 	if sort == "tree":
@@ -239,7 +238,7 @@ def get_thread_list(user="",since="",forum="",limit="",order="ASC"):
 			})
 	return thread_list;
 
-def get_user_list(forum,since,limit,order="ASC"):
+def get_user_list(forum,since,limit="",order="ASC"):
 	since_sql = ""
 	if since != None:
 		since_sql = """AND u.user >= {}""".format(since)
@@ -248,25 +247,12 @@ def get_user_list(forum,since,limit,order="ASC"):
 		order_sql = order_sql + """{}""".format(order)
 	limit_sql = ""
 	if limit != None:
-		limit = int(limit)
-	else:
-		limit = -1
-	user_list_sql = execute("""SELECT u.user, email, name, username, isAnonymous, about FROM User AS u \
+		limit_sql = """LIMIT {}""".format(limit)
+	user_list_sql = execute("""SELECT DISTINCT u.user, email, name, username, isAnonymous, about FROM User AS u \
 		INNER JOIN Post AS p ON(p.user = u.email)\
-		WHERE forum = '{forum}' {since} {order};""".format(forum = forum, order = order_sql, since = since_sql))
+		WHERE forum = '{forum}' {since} {order} {limit};""".format(forum = forum, order = order_sql, limit = limit_sql, since = since_sql))
 	user_list = list();
-	seen = set();
-	result = list();
-	i = 0
-	for x in user_list_sql:
-		if x in seen:
-			continue
-		seen.add(x)
-		result.append(x)
-		i = i + 1
-		if i == limit:
-			break
-	for user_sql in result:
+	for user_sql in user_list_sql:
 		user_list.append({'id': str_to_json(user_sql[0]),
 			'email': str_to_json(user_sql[1]),
 			'name': str_to_json(user_sql[2]),
