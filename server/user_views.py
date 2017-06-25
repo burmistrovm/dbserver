@@ -1,5 +1,5 @@
 from django.http import HttpResponse, Http404, HttpRequest
-import requests
+# import requests
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
